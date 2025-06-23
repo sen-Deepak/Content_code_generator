@@ -3,6 +3,28 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+
+interface UserProfile {
+  id: string;
+  email: string;
+  team_code: string;
+  role: string;
+}
+
+interface GeneratedCode {
+  id?: string;
+  user_id: string;
+  team_code: string;
+  email: string;
+  campaign: string;
+  sequence: number;
+  type: string;
+  carousel_count: number | null;
+  code: string;
+  date: string;
+  time: string;
+}
 
 export default function UserDashboardPage() {
   const [campaigns, setCampaigns] = useState<string[]>([])
@@ -10,8 +32,8 @@ export default function UserDashboardPage() {
   const [contentType, setContentType] = useState('')
   const [carouselCount, setCarouselCount] = useState(2)
   const [codeCount, setCodeCount] = useState(1)
-  const [userProfile, setUserProfile] = useState<any>(null)
-  const [codes, setCodes] = useState<any[]>([])
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [codes, setCodes] = useState<GeneratedCode[]>([])
   const [userId, setUserId] = useState<string | null>(null);
   const [copiedCodes, setCopiedCodes] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<{campaign?: boolean, contentType?: boolean, codeCount?: boolean}>({});
@@ -108,7 +130,7 @@ export default function UserDashboardPage() {
       <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-lg space-y-7 transition-all duration-300">
         {/* Top Row: Logo left, user info right */}
         <div className="flex items-center mb-6">
-          <img
+          <Image
             src="https://www.creativefuel.io/assets/imgs/logo/icon-dark.png"
             alt="Logo"
             width={62}

@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
+interface User {
+  id: string;
+  email: string;
+  team_code: string;
+  role: string;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  created_by: string;
+}
 
 export default function AdminDashboardPage() {
   // Use the shared supabase client
@@ -15,11 +29,11 @@ export default function AdminDashboardPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
   const [teamCode, setTeamCode] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   // CAMPAIGN state
   const [campaignName, setCampaignName] = useState('');
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -158,7 +172,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-lg transition-all duration-300 flex flex-col" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
           {/* Sticky Top Row: Logo left, admin badge/email right */}
           <div className="flex items-center mb-6 bg-white pb-4" style={{marginLeft: '-2.5rem', marginRight: '-2.5rem', paddingLeft: '2.5rem', paddingRight: '2.5rem'}}>
-            <img
+            <Image
               src="https://www.creativefuel.io/assets/imgs/logo/icon-dark.png"
               alt="Logo"
               width={72}
@@ -180,7 +194,7 @@ export default function AdminDashboardPage() {
             <select
               className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 mb-4"
               onChange={(e) => {
-                setSection(e.target.value as any);
+                setSection(e.target.value as 'users' | 'campaigns' | '');
                 setAction('');
                 setMessage('');
               }}
@@ -197,7 +211,7 @@ export default function AdminDashboardPage() {
               <select
                 className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 mb-4"
                 onChange={(e) => {
-                  setAction(e.target.value as any);
+                  setAction(e.target.value as 'add' | 'remove' | '');
                   setMessage('');
                 }}
                 value={action}
@@ -249,7 +263,7 @@ export default function AdminDashboardPage() {
           {/* Remove User List */}
           {section === 'users' && action === 'remove' && (
             <div className="space-y-2">
-              {users.map((u: any) => (
+              {users.map((u: User) => (
                 <div key={u.id} className="flex justify-between items-center border p-3 rounded-lg">
                   <div>
                     <p className="font-semibold text-gray-800">{u.email}</p>
@@ -282,7 +296,7 @@ export default function AdminDashboardPage() {
           {/* Remove Campaign List */}
           {section === 'campaigns' && action === 'remove' && (
             <div className="space-y-2">
-              {campaigns.map((c: any) => (
+              {campaigns.map((c: Campaign) => (
                 <div key={c.id} className="flex justify-between items-center border p-3 rounded-lg">
                   <div className="font-semibold text-gray-800">{c.name}</div>
                   <button className="text-red-600 hover:underline font-semibold" onClick={() => handleRemoveCampaign(c.id)}>Remove</button>
