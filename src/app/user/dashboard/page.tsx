@@ -34,7 +34,6 @@ export default function UserDashboardPage() {
   const [codeCount, setCodeCount] = useState(1)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [codes, setCodes] = useState<GeneratedCode[]>([])
-  const [userId, setUserId] = useState<string | null>(null);
   const [copiedCodes, setCopiedCodes] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<{campaign?: boolean, contentType?: boolean, codeCount?: boolean}>({});
   const router = useRouter();
@@ -48,14 +47,11 @@ export default function UserDashboardPage() {
   const fetchUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setUserId(user.id)
-
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
       .single()
-    
     if (userData) setUserProfile(userData)
     else if (userError) alert('Error fetching user profile')
   }
@@ -203,7 +199,7 @@ export default function UserDashboardPage() {
         <div>
           <h2 className="text-lg font-bold mt-6 text-gray-800 mb-3 flex items-center gap-2"><span className="inline-block w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center"><svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12h6m2 0a2 2 0 100-4 2 2 0 000 4zm-8 0a2 2 0 100-4 2 2 0 000 4zm2 8a8 8 0 100-16 8 8 0 000 16z" /></svg></span>Your Generated Codes</h2>
           <div className="mt-2 grid grid-cols-2 gap-4">
-            {codes.length > 0 ? codes.map((c, idx) => (
+            {codes.length > 0 ? codes.map((c) => (
               <div
                 key={c.id || c.code}
                 onClick={async () => {
@@ -220,7 +216,7 @@ export default function UserDashboardPage() {
                     textarea.select();
                     try {
                       document.execCommand('copy');
-                    } catch (err) {
+                    } catch {
                       window.prompt('Copy this code:', c.code);
                     }
                     document.body.removeChild(textarea);
