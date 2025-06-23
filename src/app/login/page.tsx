@@ -66,7 +66,7 @@ export default function LoginPage() {
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white">
       {/* Logo and App Name above the card */}
       <div className="flex flex-col items-center mb-4 mt-6">
-        <img
+        <Image
           src="https://creativefuel.io/assets/imgs/logo/logo-dark.svg"
           alt="Company Logo"
           width={210}
