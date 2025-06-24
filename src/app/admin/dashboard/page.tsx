@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import logo2 from '../../../../logo2.png';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -47,6 +48,20 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     setMounted(true);
+    // Check authentication and role
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+      // Optionally, fetch user role from DB and check for admin
+      const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single();
+      if (!userData || userData.role !== 'admin') {
+        router.replace('/login');
+      }
+    };
+    checkAuth();
   }, []);
 
   useEffect(() => {
@@ -175,7 +190,7 @@ export default function AdminDashboardPage() {
           {/* Sticky Top Row: Logo left, admin badge/email right */}
           <div className="flex items-center mb-6 bg-white pb-4" style={{marginLeft: '-2.5rem', marginRight: '-2.5rem', paddingLeft: '2.5rem', paddingRight: '2.5rem'}}>
             <Image
-              src="https://www.creativefuel.io/assets/imgs/logo/icon-dark.png"
+              src={logo2}
               alt="Logo"
               width={72}
               height={72}

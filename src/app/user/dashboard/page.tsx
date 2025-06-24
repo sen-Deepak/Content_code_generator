@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation'
 import Image from 'next/image';
+import logo2 from '../../../../logo2.png';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -108,8 +109,22 @@ export default function UserDashboardPage() {
   }
 
   useEffect(() => {
-    fetchCampaigns()
-    fetchUserProfile()
+    // Check authentication and role
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+      // Optionally, fetch user role from DB and check for user
+      const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single();
+      if (!userData || userData.role !== 'user') {
+        router.replace('/login');
+      }
+    };
+    checkAuth();
+    fetchCampaigns();
+    fetchUserProfile();
   }, [])
 
   return (
@@ -118,7 +133,7 @@ export default function UserDashboardPage() {
         {/* Top Row: Logo left, user info right */}
         <div className="flex items-center mb-6">
           <Image
-            src="https://www.creativefuel.io/assets/imgs/logo/icon-dark.png"
+            src={logo2}
             alt="Logo"
             width={62}
             height={62}
