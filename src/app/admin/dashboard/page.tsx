@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
             <select
               className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 mb-4"
               onChange={(e) => {
-                setSection(e.target.value as any);
+                setSection(e.target.value === 'users' || e.target.value === 'campaigns' ? e.target.value : '');
                 setAction('');
                 setMessage('');
               }}
@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
               <select
                 className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 mb-4"
                 onChange={(e) => {
-                  setAction(e.target.value as any);
+                  setAction(e.target.value === 'add' || e.target.value === 'remove' ? e.target.value : '');
                   setMessage('');
                 }}
                 value={action}
