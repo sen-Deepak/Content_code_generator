@@ -2,8 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/supabaseClient'
+import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -66,7 +70,7 @@ export default function LoginPage() {
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white">
       {/* Logo and App Name above the card */}
       <div className="flex flex-col items-center mb-4 mt-6">
-        <img
+        <Image
           src="https://creativefuel.io/assets/imgs/logo/logo-dark.svg"
           alt="Company Logo"
           width={210}

@@ -43,7 +43,7 @@ export async function POST(req) {
     }
 
     return new Response(JSON.stringify({ message: 'User created successfully', userId }), { status: 200 });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   }
 }
