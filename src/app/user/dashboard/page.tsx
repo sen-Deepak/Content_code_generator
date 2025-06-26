@@ -124,7 +124,7 @@ export default function UserDashboardPage() {
     checkAuth();
     fetchCampaigns();
     fetchUserProfile();
-  }, [])
+  }, [router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e3eafc] to-[#f5f7fa] font-[Inter,Segoe UI,sans-serif]">

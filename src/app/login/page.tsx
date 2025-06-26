@@ -21,8 +21,7 @@ export default function LoginPage() {
     try {
       // Start both requests in parallel
       const loginPromise = supabase.auth.signInWithPassword({ email, password });
-      let loginData, loginError;
-      ({ data: loginData, error: loginError } = await loginPromise);
+      const { data: loginData, error: loginError } = await loginPromise;
       if (loginError) {
         alert(loginError.message);
         setLoading(false)
@@ -39,9 +38,7 @@ export default function LoginPage() {
         .select('role')
         .eq('id', loginData.user.id)
         .single();
-      // Optimistically navigate
-      let userData, userTableError;
-      ({ data: userData, error: userTableError } = await userTablePromise);
+      const { data: userData, error: userTableError } = await userTablePromise;
       if (userTableError || !userData) {
         alert('Could not fetch user role');
         setLoading(false)
