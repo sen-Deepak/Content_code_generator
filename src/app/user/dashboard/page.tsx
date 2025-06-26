@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation'
 import Image from 'next/image';
 import logo2 from '../../../../logo2.png';
+import LoadingOverlay from '../../../components/LoadingOverlay';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -15,7 +16,7 @@ export default function UserDashboardPage() {
   const [selectedCampaign, setSelectedCampaign] = useState('')
   const [contentType, setContentType] = useState('')
   const [carouselCount, setCarouselCount] = useState(2)
-  const [codeCount, setCodeCount] = useState(1)
+  const [loading, setLoading] = useState(false);
   type UserProfile = {
     id: string;
     email: string;
@@ -25,7 +26,7 @@ export default function UserDashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [codes, setCodes] = useState<{ code: string; id?: string }[]>([])
   const [copiedCodes, setCopiedCodes] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<{campaign?: boolean, contentType?: boolean, codeCount?: boolean}>({});
+  const [fieldErrors, setFieldErrors] = useState<{campaign?: boolean, contentType?: boolean}>({});
   const router = useRouter();
 
   const fetchCampaigns = async () => {
@@ -49,17 +50,17 @@ export default function UserDashboardPage() {
   }
 
   const generateAndStoreCodes = async () => {
-    const errors: {campaign?: boolean, contentType?: boolean, codeCount?: boolean} = {};
+    setLoading(true);
+    const errors: {campaign?: boolean, contentType?: boolean} = {};
     if (!selectedCampaign) errors.campaign = true;
     if (!contentType) errors.contentType = true;
-    if (!codeCount) errors.codeCount = true;
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0) { setLoading(false); return; }
     if (!userProfile || !userProfile.id || !userProfile.team_code || !userProfile.email) {
       alert('User profile not loaded or missing required fields');
+      setLoading(false);
       return;
     }
-
     const teamCode = userProfile.team_code;
     const userId = userProfile.id;
     const email = userProfile.email;
@@ -68,7 +69,7 @@ export default function UserDashboardPage() {
     const now = new Date();
     const date = now.toLocaleDateString();
     const time = now.toLocaleTimeString();
-
+    // Fetch only sequence field
     const { data: existingCodes } = await supabase
       .from('generated_codes')
       .select('sequence')
@@ -80,32 +81,30 @@ export default function UserDashboardPage() {
     if (existingCodes && existingCodes.length > 0) {
       startSeq = (existingCodes[0].sequence || 0) + 1;
     }
-
-    const newCodes = [];
-    for (let i = 0; i < codeCount; i++) {
-      const sequence = startSeq + i;
-      const code = `[${teamCode}${campaign}${sequence}${typeInitial}${contentType === 'Carousel' ? carouselCount : ''}]`;
-      newCodes.push({
-        user_id: userId,
-        team_code: teamCode,
-        email,
-        campaign,
-        sequence,
-        type: contentType,
-        carousel_count: contentType === 'Carousel' ? carouselCount : null,
-        code,
-        date,
-        time,
-      });
-    }
-
-    const { error } = await supabase.from('generated_codes').insert(newCodes);
-    if (error) {
-      console.error('Supabase insert error:', error);
-      alert('Error storing codes: ' + error.message);
-    } else {
-      setCodes(newCodes);
-    }
+    // Optimistically show code instantly
+    const sequence = startSeq;
+    const code = `[${teamCode}${campaign}${sequence}${typeInitial}${contentType === 'Carousel' ? carouselCount : ''}]`;
+    const newCode = {
+      user_id: userId,
+      team_code: teamCode,
+      email,
+      campaign,
+      sequence,
+      type: contentType,
+      carousel_count: contentType === 'Carousel' ? carouselCount : null,
+      code,
+      date,
+      time,
+    };
+    setCodes([newCode]);
+    setLoading(false);
+    // Insert in background, show error if any
+    supabase.from('generated_codes').insert([newCode]).then(({ error }) => {
+      if (error) {
+        console.error('Supabase insert error:', error);
+        alert('Error storing codes: ' + error.message);
+      }
+    });
   }
 
   useEffect(() => {
@@ -129,14 +128,15 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e3eafc] to-[#f5f7fa] font-[Inter,Segoe UI,sans-serif]">
+      {loading && <LoadingOverlay />}
       <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-lg space-y-7 transition-all duration-300">
         {/* Top Row: Logo left, user info right */}
         <div className="flex items-center mb-6">
           <Image
             src={logo2}
             alt="Logo"
-            width={62}
-            height={62}
+            width={68}
+            height={68}
             className="mr-6 transition-transform duration-300 hover:scale-105"
           />
           {userProfile && (
@@ -162,9 +162,9 @@ export default function UserDashboardPage() {
           </select>
           {fieldErrors.campaign && <div className="text-red-500 text-xs mt-1">Please select a campaign.</div>}
         </div>
-        {/* Content Type and Code Count Row */}
+        {/* Content Type and Carousel Count Row */}
         <div className="flex items-center gap-4 mb-2">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0" style={{maxWidth: contentType === 'Carousel' ? '60%' : '100%'}}>
             <label className="block text-base font-semibold text-gray-700 mb-2">Content Type</label>
             <select className={`w-full p-3 border rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 ${fieldErrors.contentType ? 'border-red-500' : 'border-gray-300'}`} value={contentType} onChange={e => { setContentType(e.target.value); setFieldErrors(f => ({...f, contentType: false})); }}>
               <option value="" disabled hidden className="text-gray-400">Content Type</option>
@@ -174,29 +174,18 @@ export default function UserDashboardPage() {
             </select>
             {fieldErrors.contentType && <div className="text-red-500 text-xs mt-1">Please select a content type.</div>}
           </div>
-          <div className="flex-1">
-            <label className="block text-base font-semibold text-gray-700 mb-2">Code Count</label>
-            <select className={`w-full p-3 border rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800 ${fieldErrors.codeCount ? 'border-red-500' : 'border-gray-300'}`} value={codeCount} onChange={e => { setCodeCount(parseInt(e.target.value)); setFieldErrors(f => ({...f, codeCount: false})); }}>
-              <option value="" disabled hidden className="text-gray-400">Code Count</option>
-              {[...Array(20)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}</option>
-              ))}
-            </select>
-            {fieldErrors.codeCount && <div className="text-red-500 text-xs mt-1">Please select code count.</div>}
-          </div>
+          {contentType === 'Carousel' && (
+            <div className="w-2/5 min-w-[120px]">
+              <label className="block text-base font-semibold text-gray-700 mb-2 whitespace-nowrap">Slide Count</label>
+              <select className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800" value={carouselCount} onChange={e => setCarouselCount(parseInt(e.target.value))}>
+                <option value="" disabled hidden className="text-gray-400">Slide Count</option>
+                {[...Array(19)].map((_, i) => (
+                  <option key={i + 2} value={i + 2}>{i + 2}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-        {/* Carousel Count if Carousel */}
-        {contentType === 'Carousel' && (
-          <div>
-            <label className="block text-base font-semibold text-gray-700 mb-2">Slide Count</label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg text-base focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-200 text-gray-800" value={carouselCount} onChange={e => setCarouselCount(parseInt(e.target.value))}>
-              <option value="" disabled hidden className="text-gray-400">Slide Count</option>
-              {[...Array(19)].map((_, i) => (
-                <option key={i + 2} value={i + 2}>{i + 2}</option>
-              ))}
-            </select>
-          </div>
-        )}
         {/* Generate Button */}
         <button className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold text-lg shadow-md transition-all duration-200 hover:bg-indigo-700 focus:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200" onClick={generateAndStoreCodes}>
           Generate Code(s)
@@ -204,7 +193,7 @@ export default function UserDashboardPage() {
         {/* Generated Codes List */}
         <div>
           <h2 className="text-lg font-bold mt-6 text-gray-800 mb-3 flex items-center gap-2"><span className="inline-block w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center"><svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12h6m2 0a2 2 0 100-4 2 2 0 000 4zm-8 0a2 2 0 100-4 2 2 0 000 4zm2 8a8 8 0 100-16 8 8 0 000 16z" /></svg></span>Your Generated Codes</h2>
-          <div className="mt-2 grid grid-cols-2 gap-4">
+          <div className="mt-2 flex flex-col items-center w-full">
             {codes.length > 0 ? codes.map(c => (
               <div
                 key={c.id || c.code}
@@ -229,13 +218,14 @@ export default function UserDashboardPage() {
                   }
                   setCopiedCodes(prev => prev.includes(c.code) ? prev : [...prev, c.code]);
                 }}
-                className={`border p-4 rounded-xl cursor-pointer text-center font-mono text-base shadow-sm transition-all duration-200 select-none overflow-hidden break-all ${copiedCodes.includes(c.code) ? 'text-red-600 border-red-400 bg-red-50' : 'hover:bg-indigo-50 hover:shadow-lg'}`}
+                className={`w-full border p-6 rounded-xl cursor-pointer text-center font-mono text-lg shadow-sm transition-all duration-200 select-none overflow-hidden break-all ${copiedCodes.includes(c.code) ? 'text-red-600 border-red-400 bg-red-50' : 'hover:bg-indigo-50 hover:shadow-lg'}`}
                 title={c.code}
+                style={{marginBottom: '12px'}}
               >
                 {c.code}
               </div>
             )) : (
-              <div className="col-span-2 text-gray-400 text-center"></div>
+              <div className="text-gray-400 text-center w-full"></div>
             )}
           </div>
         </div>
@@ -244,8 +234,10 @@ export default function UserDashboardPage() {
           <button
             className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200"
             onClick={async () => {
+              setLoading(true);
               await supabase.auth.signOut();
               router.push('/login');
+              setLoading(false);
             }}
           >
             Logout

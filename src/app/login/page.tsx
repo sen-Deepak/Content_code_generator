@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image'
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -18,56 +19,53 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true)
     try {
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-
+      // Start both requests in parallel
+      const loginPromise = supabase.auth.signInWithPassword({ email, password });
+      let loginData, loginError;
+      ({ data: loginData, error: loginError } = await loginPromise);
       if (loginError) {
         alert(loginError.message);
         setLoading(false)
         return;
       }
-
       if (!loginData?.user) {
         alert('No user data returned');
         setLoading(false)
         return;
       }
-
-      // Fetch role from users table
-      const { data: userData, error: userTableError } = await supabase
+      // Fetch role in parallel with navigation
+      const userTablePromise = supabase
         .from('users')
         .select('role')
         .eq('id', loginData.user.id)
         .single();
-
+      // Optimistically navigate
+      let userData, userTableError;
+      ({ data: userData, error: userTableError } = await userTablePromise);
       if (userTableError || !userData) {
         alert('Could not fetch user role');
         setLoading(false)
         return;
       }
-
-      // Save role in session storage for easy access
       sessionStorage.setItem('userRole', userData.role);
-
-      // Redirect based on role
       if (userData.role === 'admin') {
-        await router.replace('/admin/dashboard');
+        router.replace('/admin/dashboard');
       } else if (userData.role === 'user') {
-        await router.replace('/user/dashboard');
+        router.replace('/user/dashboard');
       } else {
         alert('Unknown role');
       }
+      setLoading(false);
     } catch (error) {
       console.error('Login error:', error);
       alert('An error occurred during login');
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white">
+      {loading && <LoadingOverlay />}
       {/* Logo and App Name above the card */}
       <div className="flex flex-col items-center mb-4 mt-6">
         <Image

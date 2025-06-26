@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import logo2 from '../../../../logo2.png';
+import LoadingOverlay from '../../../components/LoadingOverlay';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -185,6 +186,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
+      {loading && <LoadingOverlay />}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e3eafc] to-[#f5f7fa] font-[Inter,Segoe UI,sans-serif]">
         <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-lg transition-all duration-300 flex flex-col" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
           {/* Sticky Top Row: Logo left, admin badge/email right */}
@@ -327,8 +329,10 @@ export default function AdminDashboardPage() {
             <button
               className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 px-5 py-2 rounded-lg font-semibold shadow transition-all duration-200"
               onClick={async () => {
+                setLoading(true);
                 await supabase.auth.signOut();
                 router.push('/login');
+                setLoading(false);
               }}
             >
               Logout
