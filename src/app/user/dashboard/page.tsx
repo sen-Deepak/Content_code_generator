@@ -135,8 +135,8 @@ export default function UserDashboardPage() {
           <Image
             src={logo2}
             alt="Logo"
-            width={68}
-            height={68}
+            width={72}
+            height={72}
             className="mr-6 transition-transform duration-300 hover:scale-105"
           />
           {userProfile && (

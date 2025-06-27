@@ -28,6 +28,10 @@ export default function RootLayout({
         className={`${geistSans?.variable} ${geistMono?.variable} antialiased`}
       >
         {children}
+        {/* Version Info - visible on all pages */}
+        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 z-50 select-none pointer-events-none">
+          version: 2.0
+        </div>
       </body>
     </html>
   );
